@@ -1,8 +1,7 @@
-import { and, eq } from "drizzle-orm";
-import { headers } from "next/headers";
+import { and, desc, eq } from "drizzle-orm";
 import { account } from "@/db/auth-schema";
 import { db } from "@/db";
-import { auth } from "@/lib/auth";
+import { resolveGoogleCalendarAccessToken } from "@/lib/calendar/google-access-token";
 import { hasCalendarReadonlyScope } from "@/lib/calendar/scope";
 import {
   GoogleCalendarAuthError,
@@ -23,6 +22,7 @@ export async function getGoogleAccountForUser(
     .select()
     .from(account)
     .where(and(eq(account.userId, userId), eq(account.providerId, "google")))
+    .orderBy(desc(account.updatedAt))
     .limit(1);
 
   return row ?? null;
@@ -35,20 +35,6 @@ function hasOfflineCredentials(googleAccount: GoogleAccountRow | null): boolean 
   return (
     hasCalendarReadonlyScope(googleAccount.scope) &&
     Boolean(googleAccount.refreshToken)
-  );
-}
-
-function isAuthProbeError(error: unknown): boolean {
-  if (!(error instanceof Error)) {
-    return false;
-  }
-
-  const message = error.message.toLowerCase();
-  return (
-    message.includes("invalid_grant") ||
-    message.includes("401") ||
-    message.includes("unauthorized") ||
-    message.includes("token")
   );
 }
 
@@ -91,21 +77,5 @@ export async function getGoogleAccessTokenForUser(
     throw new GoogleCalendarAuthError("Google Calendar is not connected");
   }
 
-  try {
-    const tokenResult = await auth.api.getAccessToken({
-      body: { accountId: googleAccount!.id },
-      headers: await headers(),
-    });
-
-    if (!tokenResult?.accessToken) {
-      throw new GoogleCalendarAuthError("Missing Google access token");
-    }
-
-    return tokenResult.accessToken;
-  } catch (error) {
-    if (isAuthProbeError(error)) {
-      throw new GoogleCalendarAuthError();
-    }
-    throw error;
-  }
+  return resolveGoogleCalendarAccessToken(userId, googleAccount!);
 }

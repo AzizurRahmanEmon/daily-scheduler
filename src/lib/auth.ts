@@ -3,6 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { db } from "@/db";
 import * as authSchema from "@/db/auth-schema";
+import { CALENDAR_READONLY_SCOPE } from "@/lib/calendar/scope";
 import { userPreferences } from "@/db/schema";
 
 const authBaseUrl = process.env.BETTER_AUTH_URL;
@@ -19,6 +20,14 @@ export const auth = betterAuth({
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      scope: [
+        "openid",
+        "email",
+        "profile",
+        CALENDAR_READONLY_SCOPE,
+      ],
+      accessType: "offline",
+      prompt: "select_account",
     },
   },
   databaseHooks: {

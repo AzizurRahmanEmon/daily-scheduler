@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Select } from "@/components/ui/input";
 import type { CalendarConnectionStatus } from "@/lib/calendar/connection";
 import { mergeMealTemplatesOnCountChange } from "@/lib/meals/presets";
+import { getBrowserIanaTimezone } from "@/lib/timezones";
 
 export type SettingsFormValues = {
   timezone: string;
@@ -38,6 +39,7 @@ export function SettingsForm({
   const [mealTemplates, setMealTemplates] = useState<DefaultMealTemplate[]>(
     preferences.defaultMealTemplates,
   );
+  const [timezone, setTimezone] = useState(preferences.timezone);
 
   function handleMealCountChange(nextCount: string) {
     setMealCountPreference(nextCount);
@@ -78,7 +80,7 @@ export function SettingsForm({
 
     startTransition(async () => {
       const result = await updatePreferences({
-        timezone: formData.get("timezone"),
+        timezone,
         sleepDurationHours: formData.get("sleepDurationHours"),
         mealCountPreference: Number(mealCountPreference),
         defaultMealTemplates: mealTemplates,
@@ -94,6 +96,17 @@ export function SettingsForm({
     });
   }
 
+  function handleDetectTimezone() {
+    setSuccess(false);
+    const detected = getBrowserIanaTimezone();
+    if (!detected) {
+      setError("Could not detect timezone on this device. Enter one manually.");
+      return;
+    }
+    setTimezone(detected);
+    setError(null);
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -102,23 +115,46 @@ export function SettingsForm({
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <Input
-              label="Timezone"
-              name="timezone"
-              list="timezone-options"
-              defaultValue={preferences.timezone}
-              disabled={isPending}
-              required
-              hint="Applies to new daily logs starting tomorrow. Existing logs keep their stored timezone."
-            />
+            <label
+              htmlFor="timezone"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
+            >
+              Timezone
+            </label>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+              <Input
+                id="timezone"
+                name="timezone"
+                list="timezone-options"
+                value={timezone}
+                onChange={(event) => setTimezone(event.target.value)}
+                disabled={isPending}
+                required
+                className="sm:flex-1"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="shrink-0 sm:mt-0.5"
+                disabled={isPending}
+                onClick={handleDetectTimezone}
+              >
+                Use my location
+              </Button>
+            </div>
             <datalist id="timezone-options">
               {timezones.map((zone) => (
                 <option key={zone} value={zone} />
               ))}
             </datalist>
             <p className="mt-1.5 text-xs text-slate-500">
-              Changing timezone does not rewrite today&apos;s log. The update
-              takes effect from your next daily log.
+              Use an IANA timezone (e.g.{" "}
+              <span className="font-medium text-slate-600">Asia/Dhaka</span> for
+              GMT+6), or click{" "}
+              <span className="font-medium text-slate-600">Use my location</span>{" "}
+              to fill from your device. Saving updates open days; closed days keep
+              their stored timezone.
             </p>
           </div>
 

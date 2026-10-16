@@ -16,6 +16,7 @@ function formatTime(date: Date, timeZone: string): string {
     timeZone,
     hour: "numeric",
     minute: "2-digit",
+    timeZoneName: "shortOffset",
   }).format(date);
 }
 
@@ -51,5 +52,6 @@ export function formatLastSynced(
     timeZone,
     dateStyle: "medium",
     timeStyle: "short",
+    timeZoneName: "shortOffset",
   }).format(date);
 }

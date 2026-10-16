@@ -21,6 +21,10 @@ describe("timezoneSchema", () => {
   it("rejects an invalid zone string", () => {
     expect(timezoneSchema.safeParse("Not/A_Real_Zone").success).toBe(false);
   });
+
+  it("maps GMT+6 to Asia/Dhaka", () => {
+    expect(timezoneSchema.parse("GMT+6")).toBe("Asia/Dhaka");
+  });
 });
 
 describe("sleepDurationHoursSchema", () => {

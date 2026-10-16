@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isValidIanaTimezone } from "@/lib/timezones";
+import { isValidIanaTimezone, normalizeTimezoneInput } from "@/lib/timezones";
 import {
   addMinutesToTime,
   crossesMidnight,
@@ -10,7 +10,11 @@ export const timezoneSchema = z
   .string()
   .trim()
   .min(1, "Timezone is required")
-  .refine(isValidIanaTimezone, "Invalid timezone");
+  .transform(normalizeTimezoneInput)
+  .refine(
+    isValidIanaTimezone,
+    "Invalid timezone. Use an IANA name (e.g. Asia/Dhaka for GMT+6).",
+  );
 
 export const sleepDurationHoursSchema = z.coerce
   .number()

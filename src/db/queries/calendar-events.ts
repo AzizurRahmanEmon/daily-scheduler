@@ -71,50 +71,47 @@ export async function replaceCalendarEventsForLog(
   const googleEventIds = mappedEvents.map((event) => event.googleEventId);
   const now = new Date();
 
-  await db.transaction(async (tx) => {
-    for (const event of mappedEvents) {
-      await tx
-        .insert(calendarEvents)
-        .values({
-          dailyLogId: logId,
-          googleEventId: event.googleEventId,
+  // neon-http driver does not support db.transaction(); use sequential writes.
+  for (const event of mappedEvents) {
+    await db
+      .insert(calendarEvents)
+      .values({
+        dailyLogId: logId,
+        googleEventId: event.googleEventId,
+        title: event.title,
+        startsAt: event.startsAt,
+        endsAt: event.endsAt,
+        allDay: event.allDay,
+      })
+      .onConflictDoUpdate({
+        target: [calendarEvents.dailyLogId, calendarEvents.googleEventId],
+        set: {
           title: event.title,
           startsAt: event.startsAt,
           endsAt: event.endsAt,
           allDay: event.allDay,
-        })
-        .onConflictDoUpdate({
-          target: [calendarEvents.dailyLogId, calendarEvents.googleEventId],
-          set: {
-            title: event.title,
-            startsAt: event.startsAt,
-            endsAt: event.endsAt,
-            allDay: event.allDay,
-            updatedAt: now,
-          },
-        });
-    }
+          updatedAt: now,
+        },
+      });
+  }
 
-    if (googleEventIds.length === 0) {
-      await tx
-        .delete(calendarEvents)
-        .where(eq(calendarEvents.dailyLogId, logId));
-    } else {
-      await tx
-        .delete(calendarEvents)
-        .where(
-          and(
-            eq(calendarEvents.dailyLogId, logId),
-            notInArray(calendarEvents.googleEventId, googleEventIds),
-          ),
-        );
-    }
+  if (googleEventIds.length === 0) {
+    await db.delete(calendarEvents).where(eq(calendarEvents.dailyLogId, logId));
+  } else {
+    await db
+      .delete(calendarEvents)
+      .where(
+        and(
+          eq(calendarEvents.dailyLogId, logId),
+          notInArray(calendarEvents.googleEventId, googleEventIds),
+        ),
+      );
+  }
 
-    await tx
-      .update(dailyLogs)
-      .set({ calendarSyncedAt: now, updatedAt: now })
-      .where(eq(dailyLogs.id, logId));
-  });
+  await db
+    .update(dailyLogs)
+    .set({ calendarSyncedAt: now, updatedAt: now })
+    .where(eq(dailyLogs.id, logId));
 }
 
 export async function setCalendarEventIncluded(

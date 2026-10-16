@@ -21,7 +21,7 @@ export function PageContainer({
 
   return (
     <div
-      className={`mx-auto w-full px-4 py-8 sm:px-6 lg:px-8 ${maxWidth} ${centered ? "flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center lg:min-h-screen" : ""}`}
+      className={`w-full px-4 py-8 sm:px-6 lg:px-8 ${maxWidth} ${centered ? "mx-auto flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center lg:min-h-screen" : ""}`}
     >
       {children}
     </div>

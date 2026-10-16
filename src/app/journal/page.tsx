@@ -156,7 +156,7 @@ function JournalPageShell({
   children: ReactNode;
 }) {
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <header className="mb-6 lg:mb-8">
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
           Journal

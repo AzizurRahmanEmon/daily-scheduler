@@ -11,7 +11,7 @@ export default function JournalError({
   reset: () => void;
 }) {
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <Card>
         <CardContent className="space-y-4 py-8 text-center">
           <p className="text-sm text-slate-600">

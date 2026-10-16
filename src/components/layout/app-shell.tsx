@@ -49,10 +49,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const showSignOut = pathname !== "/login";
 
   return (
-    <div className="flex min-h-full bg-slate-50">
-      {/* Desktop sidebar */}
-      <aside className="hidden w-56 shrink-0 border-r border-slate-200/80 bg-white lg:block">
-        <div className="sticky top-0 flex h-full flex-col p-5">
+    <div className="min-h-screen bg-slate-50">
+      {/* Desktop sidebar — fixed full height so main content aligns beside it */}
+      <aside
+        className="fixed inset-y-0 left-0 z-30 hidden w-56 flex-col border-r border-slate-200/80 bg-white lg:flex"
+      >
+        <div className="flex h-full min-h-screen flex-col p-5">
           <div className="mb-8">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-600 text-sm font-bold text-white">
               DS
@@ -71,8 +73,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      {/* Mobile header + drawer */}
-      <div className="flex min-w-0 flex-1 flex-col">
+      {/* Main column offset by sidebar width on large screens */}
+      <div className="flex min-h-screen min-w-0 flex-col lg:pl-56">
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200/80 bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-600 text-xs font-bold text-white">

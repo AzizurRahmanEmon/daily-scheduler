@@ -74,9 +74,20 @@ export async function syncCalendar(): Promise<CalendarActionResult> {
     }
 
     if (error instanceof GoogleCalendarFetchError) {
+      if (error.status === 403) {
+        return {
+          ok: false,
+          error:
+            "Google Calendar API access was denied. In Google Cloud Console, enable the Google Calendar API for this OAuth app, then reconnect in Settings.",
+          code: "needs_reconnect",
+        };
+      }
+
       return {
         ok: false,
-        error: "Could not reach Google Calendar. Try again.",
+        error:
+          error.googleMessage ??
+          "Could not reach Google Calendar. Try again.",
       };
     }
 

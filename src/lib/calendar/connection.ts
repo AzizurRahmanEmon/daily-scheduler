@@ -4,14 +4,15 @@ import { account } from "@/db/auth-schema";
 import { db } from "@/db";
 import { auth } from "@/lib/auth";
 import { hasCalendarReadonlyScope } from "@/lib/calendar/scope";
-import { GoogleCalendarAuthError } from "@/lib/google-calendar/fetch-events";
+import {
+  GoogleCalendarAuthError,
+  probeGoogleCalendarApi,
+} from "@/lib/google-calendar/fetch-events";
 
 export type CalendarConnectionStatus =
   | "not_connected"
   | "connected"
   | "needs_reconnect";
-
-const PROBE_TIMEOUT_MS = 3000;
 
 export type GoogleAccountRow = typeof account.$inferSelect;
 
@@ -51,41 +52,6 @@ function isAuthProbeError(error: unknown): boolean {
   );
 }
 
-async function probeGoogleAccessToken(
-  accountId: string,
-): Promise<"ok" | "auth_error" | "timeout"> {
-  const probe = auth.api.getAccessToken({
-    body: { accountId },
-    headers: await headers(),
-  });
-
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
-
-  try {
-    const result = await Promise.race([
-      probe,
-      new Promise<"timeout">((resolve) => {
-        timeoutId = setTimeout(() => resolve("timeout"), PROBE_TIMEOUT_MS);
-      }),
-    ]);
-
-    if (result === "timeout") {
-      return "timeout";
-    }
-
-    return "ok";
-  } catch (error) {
-    if (isAuthProbeError(error)) {
-      return "auth_error";
-    }
-    return "timeout";
-  } finally {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-  }
-}
-
 export async function getCalendarConnectionStatus(
   userId: string,
 ): Promise<CalendarConnectionStatus> {
@@ -95,13 +61,25 @@ export async function getCalendarConnectionStatus(
     return "not_connected";
   }
 
-  const probe = await probeGoogleAccessToken(googleAccount!.id);
+  try {
+    const accessToken = await getGoogleAccessTokenForUser(userId);
+    const probe = await probeGoogleCalendarApi(accessToken);
 
-  if (probe === "auth_error") {
+    if (probe === "auth_error") {
+      return "needs_reconnect";
+    }
+
+    if (probe === "forbidden" || probe === "failed") {
+      return "needs_reconnect";
+    }
+
+    return "connected";
+  } catch (error) {
+    if (error instanceof GoogleCalendarAuthError) {
+      return "needs_reconnect";
+    }
     return "needs_reconnect";
   }
-
-  return "connected";
 }
 
 export async function getGoogleAccessTokenForUser(

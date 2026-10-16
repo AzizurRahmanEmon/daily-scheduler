@@ -48,6 +48,14 @@ export async function syncCalendar(): Promise<CalendarActionResult> {
     };
   }
 
+  if (connectionStatus === "needs_reconnect") {
+    return {
+      ok: false,
+      error: "Google Calendar access expired. Reconnect in Settings.",
+      code: "needs_reconnect",
+    };
+  }
+
   try {
     const accessToken = await getGoogleAccessTokenForUser(user.id);
     const window = getLogDayWindow(log.date, log.timezone);
@@ -89,6 +97,12 @@ export async function syncCalendar(): Promise<CalendarActionResult> {
           error.googleMessage ??
           "Could not reach Google Calendar. Try again.",
       };
+    }
+
+    console.error("[syncCalendar]", error);
+
+    if (error instanceof Error && error.message.trim()) {
+      return { ok: false, error: error.message };
     }
 
     return { ok: false, error: "Calendar sync failed. Try again." };

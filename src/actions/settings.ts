@@ -1,10 +1,10 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
-import { userPreferences } from "@/db/schema";
+import { dailyLogs, userPreferences } from "@/db/schema";
 import {
   sleepHoursToMinutes,
   updatePreferencesSchema,
@@ -52,8 +52,18 @@ export async function updatePreferences(
     return { ok: false, error: "Preferences not found." };
   }
 
+  await db
+    .update(dailyLogs)
+    .set({ timezone, updatedAt: new Date() })
+    .where(and(eq(dailyLogs.userId, user.id), ne(dailyLogs.status, "closed")));
+
   revalidatePath("/settings");
   revalidatePath("/wake-up");
+  revalidatePath("/calendar-review");
+  revalidatePath("/schedule");
+  revalidatePath("/tasks");
+  revalidatePath("/meals-appointments");
+  revalidatePath("/end-of-day");
 
   return { ok: true };
 }
